@@ -1,4 +1,4 @@
-# LongInt
+# Long Int
 
 ## Задание
 
