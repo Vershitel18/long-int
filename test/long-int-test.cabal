@@ -1,0 +1,31 @@
+cabal-version:      3.0
+name:               long-int-test
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            NONE
+author:             CPP-CT
+maintainer:         CPP-CT
+-- copyright:
+build-type:         Custom
+
+custom-setup
+    setup-depends:
+        base,
+        Cabal,
+        directory,
+        time
+
+common warnings
+    ghc-options: -Wall -O2 -fforce-recomp
+
+executable long-int-test
+    import:           warnings
+    main-is:          Main.hs
+    -- other-modules:
+    -- other-extensions:
+    build-depends:    base, optparse-applicative, monad-loops, splitmix, transformers
+    extra-lib-dirs:   ../build/lib
+    extra-libraries:  long-int
+    hs-source-dirs:   .
+    default-language: GHC2021

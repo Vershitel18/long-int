@@ -1,0 +1,64 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  auto_cancel:
+    on_job_failure: none
+    on_new_commit: interruptible
+
+stages:
+  - preflight
+  - build
+  - test
+
+default:
+  image: alpine:latest
+  tags: [linux]
+  timeout: 15m
+
+Check ASM formatting:
+  stage: preflight
+  before_script:
+    - apk add --no-cache python3
+  script:
+    - ci-extra/check-asm-formatting.py
+
+Check line breaks:
+  stage: preflight
+  before_script:
+    - apk add --no-cache bash dos2unix git
+  script:
+    - ci-extra/check-line-breaks.sh
+
+Build:
+  stage: build
+  before_script:
+    - apk add --no-cache nasm binutils cmake make build-base
+  script:
+    - cmake -S . -B build
+    - cmake --build build --target long-int -j
+  artifacts:
+    paths:
+      - build/lib/liblong-int.a
+    expire_in: 2h
+
+Test:
+  image: cr.ct.itmo.ru/cpp/containers/haskell:latest
+  stage: test
+  needs:
+    - job: Build
+  script:
+    - cabal run --project-dir test long-int-test --
+        --qwords 1
+        --n-tests 100
+        --seed 1337
+        --check-abi
+    - cabal run --project-dir test long-int-test --
+        --qwords 8
+        --n-tests 100
+        --seed 1338
+        --check-abi
+    - cabal run --project-dir test long-int-test --
+        --qwords 256
+        --n-tests 100
+        --seed 1339
+        --check-abi

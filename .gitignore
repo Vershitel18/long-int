@@ -1,0 +1,26 @@
+# IDE
+*.user
+.idea/
+*.cbp
+.vs/
+.vscode/
+.cache/
+
+# OS
+.DS_Store
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake-build*/
+build/
+
+# Build artifacts
+a.out
+*.o
+add
+mul
+sub
+
+# Haskell
+dist-newstyle/
