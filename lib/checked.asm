@@ -70,11 +70,10 @@ call_with_abi_check:
                 mov             r14, POISON + 50
                 mov             r15, POISON + 60
 
-                ; call function
-                call            [rsp]
-
-                ; pop function address
-                add             rsp, 8
+                ; call function, then pop its address
+                sub             rsp, 8
+                call            [rsp + 8]
+                add             rsp, 16
 
                 ; initialize outcome
                 xor             rax, rax
