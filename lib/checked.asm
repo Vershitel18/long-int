@@ -117,5 +117,15 @@ long_int_sub_checked:
 
 
 long_int_mul_checked:
+                ; poison product
+                push            rdi
+                push            rcx
+                mov             rdi, rdx
+                lea             rcx, [rcx * 2]
+                mov             rax, POISON + 66
+                rep stosq
+                pop             rcx
+                pop             rdi
+
                 mov             r8, long_int_mul
                 jmp             call_with_abi_check
