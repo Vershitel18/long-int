@@ -1,6 +1,6 @@
 section         .text
-                cpu             x64
-                global          long_int_mul
+    cpu             x64
+    global          long_int_mul
 ; multiplies two long numbers
 ;    rdi -- address of multiplier #1 (long number)
 ;    rsi -- address of multiplier #2 (long number)
@@ -25,7 +25,7 @@ long_int_mul:
     mov     [r8 + rcx*8 - 8], rax ; Перетёрли результат нулями
     dec     rcx
     jnz     .zero
-    xor     rbx, rbx        ; индекс разряда второго множителя
+    xor     rbx, rbx ; индекс разряда второго множителя
 .outer:
     cmp     rbx, r14
     jge     .done
@@ -51,21 +51,21 @@ long_int_mul_short:
     test    rcx, rcx
     jz      .done
     push    r10 ; сохраняем r10, так как он используется для хранения результата и указателя на результат
-    xor     r11, r11        ; будем использовать r11 для хранения бита переноса от умножения и сложения
+    xor     r11, r11 ; будем использовать r11 для хранения бита переноса от умножения и сложения
 .loop:
     mov     rax, [rdi]
-    mul     rsi              ; rdx:rax = A[i] * b; в rdx будут старшие 64 бита, в rax - младшие
-    add     rax, r11         ; + бит переноса от предыдущей итерации
+    mul     rsi ; rdx:rax = A[i] * b; в rdx будут старшие 64 бита, в rax - младшие
+    add     rax, r11 ; + бит переноса от предыдущей итерации
     adc     rdx, 0
-    add     rax, [r10]       ; cуммируем с уже записанным результатом
-    adc     rdx, 0           ; учли бит переноса от сложения
+    add     rax, [r10] ; cуммируем с уже записанным результатом
+    adc     rdx, 0 ; учли бит переноса от сложения
     mov     [r10], rax
-    mov     r11, rdx         ; new carry
+    mov     r11, rdx ; new carry
     lea     r10, [r10 + 8] ; двигаем указатель на следующий разряд результата
     lea     rdi, [rdi + 8] ; двигаем указатель на следующий разряд первого множителя
     dec     rcx
     jnz     .loop
-    mov     rax, r11         ; return carry
+    mov     rax, r11 ; return carry
     pop     r10
 .done:
     ret
