@@ -130,12 +130,17 @@ data Operation = Operation
   , opCalcAnswer :: Integer -> Integer -> Integer -> Integer
   }
 
+addOp :: Operation
+addOp = Operation "add" runAdd runAddChecked (\m a b -> (a + b) `mod` m)
+
+subOp :: Operation
+subOp = Operation "sub" runSub runSubChecked (\m a b -> (a - b + m) `mod` m)
+
+mulOp :: Operation
+mulOp = Operation "mul" runMul runMulChecked (\m a b -> (a * b) `mod` (m * m))
+
 operations :: [Operation]
-operations =
-  [ Operation "add" runAdd runAddChecked (\m a b -> (a + b) `mod` m)
-  , Operation "sub" runSub runSubChecked (\m a b -> (a - b + m) `mod` m)
-  , Operation "mul" runMul runMulChecked (\m a b -> (a * b) `mod` (m * m))
-  ]
+operations = [addOp, subOp, mulOp]
 
 ----- Random -----
 
@@ -204,8 +209,40 @@ reportTest opName idx a b expectedAnswer result = do
           putStrLn $ displayException ex
       pure False
 
-runTests :: Bool -> Int -> Int -> Operation -> Rand Bool
-runTests doCheckAbi qwords nTests op@Operation{..} =
+----- Deterministic tests -----
+
+data DeterministicTest = DeterministicTest
+  { dtOp :: Operation
+  , dtA :: Integer
+  , dtB :: Integer
+  }
+
+deterministicTests :: Int -> [DeterministicTest]
+deterministicTests qwords =
+  [ DeterministicTest mulOp maxValue maxValue
+  , DeterministicTest mulOp maxValue (maxValue - 1)
+  , DeterministicTest mulOp (maxValue - 1) maxValue
+  ]
+  where
+    maxValue = 2 ^ (qwords * 64) - 1
+
+runDeterministicTests :: Bool -> Int -> [DeterministicTest] -> IO Bool
+runDeterministicTests doCheckAbi qwords tests = do
+  putStrLn "===== deterministic ====="
+  allM runAndReport (zip [1..] tests)
+  where
+    modulus = 2 ^ (qwords * 64)
+    runAndReport (idx, DeterministicTest{..}) = do
+      let Operation{..} = dtOp
+          expectedAnswer = opCalcAnswer modulus dtA dtB
+      result <- runTest doCheckAbi dtOp qwords expectedAnswer dtA dtB
+      reportTest opName idx dtA dtB expectedAnswer result
+
+----- Random tests -----
+
+runRandomTests :: Bool -> Int -> Int -> Operation -> Rand Bool
+runRandomTests doCheckAbi qwords nTests op@Operation{..} = do
+  liftIO $ putStrLn $ "===== " ++ opName ++ " ====="
   allM runAndReport [1 .. nTests]
   where
     modulus = 2 ^ (qwords * 64)
@@ -239,8 +276,9 @@ optionsParser =
 main :: IO ()
 main = do
   Options{..} <- execParser $ info (optionsParser <**> helper) fullDesc
+  detResult <- runDeterministicTests checkAbi qwords (deterministicTests qwords)
+  unless (detResult) exitFailure
   gen <- maybe initSMGen (pure . mkSMGen) rngSeed
-  results <- flip evalStateT gen $ for operations $ \op -> do
-    liftIO $ putStrLn $ "===== " ++ opName op ++ " ====="
-    runTests checkAbi qwords nTests op
+  results <- flip evalStateT gen $ for operations $ \op ->
+    runRandomTests checkAbi qwords nTests op
   unless (and results) exitFailure
